@@ -5,11 +5,11 @@ import os
 os.makedirs('static/audio', exist_ok=True)
 
 texts = [
-    "Artificial intelligence is transforming the workplace, creating new opportunities in tech and data science.",
-    "Python is the world's most popular programming language for beginners, with simple readable syntax.",
-    "Space exploration is entering an exciting era, with plans to send humans to Mars within the decade.",
-    "Climate change solutions exist, from renewable energy to electric vehicles and reforestation.",
-    "Mental health awareness matters. Talking openly about anxiety and depression helps normalize these experiences."
+    "Nur is busy right about now",
+    "Liverpool is not winning anything this season.",
+    "My favourite car is a g-wagon.",
+    "One two three four five six seven eight nine ten.",
+    "Squat Bench and Deadlift."
 ]
 
 for i, text in enumerate(texts):

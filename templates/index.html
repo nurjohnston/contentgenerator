@@ -670,60 +670,73 @@ Mental health is just as important as physical health. Yet too many people suffe
     }
 
     async function sendMessage() {
-        let userMessage = '';
+    let userMessage = '';
 
+    if (currentMode === 'text') {
+        userMessage = document.getElementById('textInput').value.trim();
+        document.getElementById('textInput').value = '';
+    } else if (currentMode === 'image') {
+        userMessage = document.getElementById('imageInput').value.trim();
+        document.getElementById('imageInput').value = '';
+    } else if (currentMode === 'audio') {
+        userMessage = document.getElementById('audioInput').value.trim();
+        document.getElementById('audioInput').value = '';
+    }
+
+    if (!userMessage) return;
+
+    addMessage(userMessage, true);
+    showTypingIndicator();
+
+    try {
         if (currentMode === 'text') {
-            userMessage = document.getElementById('textInput').value.trim();
-            document.getElementById('textInput').value = '';
-        } else if (currentMode === 'image') {
-            userMessage = document.getElementById('imageInput').value.trim();
-            document.getElementById('imageInput').value = '';
-        } else if (currentMode === 'audio') {
-            userMessage = document.getElementById('audioInput').value.trim();
-            document.getElementById('audioInput').value = '';
-        }
+            const response = await fetch('/generate/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: userMessage })
+            });
+            const data = await response.json();
+            removeTypingIndicator();
 
-        if (!userMessage) return;
-
-        addMessage(userMessage, true);
-        showTypingIndicator();
-
-        try {
-            if (currentMode === 'text') {
-                const response = await fetch('/generate/text', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userMessage })
-                });
-                const data = await response.json();
-                removeTypingIndicator();
-
-                if (data.fallback) {
-                    showFallbackMenu(data);
-                } else {
-                    addMessage(data.response, false);
-                }
-
-            } else if (currentMode === 'image') {
-                const response = await fetch('/generate/image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userMessage })
-                });
-                const data = await response.json();
-                removeTypingIndicator();
-                addMessage('', false, true, data.imageUrl);
-
-            } else if (currentMode === 'audio') {
-                removeTypingIndicator();
-                addMessage('🎵 Custom audio generation coming soon! For now, please use the quick prompts.', false);
+            if (data.fallback) {
+                showFallbackMenu(data);
+            } else {
+                addMessage(data.response, false);
             }
 
-        } catch (error) {
+        } else if (currentMode === 'image') {
+            const response = await fetch('/generate/image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: userMessage })
+            });
+            const data = await response.json();
             removeTypingIndicator();
-            addMessage('Sorry, an error occurred. Please try again.', false);
+            addMessage('', false, true, data.imageUrl);
+
+        } else if (currentMode === 'audio') {
+            const response = await fetch('/generate/audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: userMessage })
+            });
+            const data = await response.json();
+            removeTypingIndicator();
+
+            if (data.audioUrl) {
+                addMessage('', false, false, null, true, data.audioUrl);
+            } else if (data.fallback) {
+                addMessage('⚠️ Audio API is currently unavailable. Please use the pre-generated prompts above.', false);
+            } else {
+                addMessage('Error generating audio. Please try again.', false);
+            }
         }
+
+    } catch (error) {
+        removeTypingIndicator();
+        addMessage('Sorry, an error occurred. Please try again.', false);
     }
+}
 
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {

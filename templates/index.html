@@ -19,7 +19,6 @@
             flex-direction: column;
         }
 
-        /* Header with Tabs - ChatGPT Style */
         .header {
             background: #202123;
             border-bottom: 1px solid #4a4b53;
@@ -56,7 +55,6 @@
             border-bottom: 2px solid #10a37f;
         }
 
-        /* Main Chat Area - ChatGPT Style */
         .chat-container {
             flex: 1;
             overflow-y: auto;
@@ -113,24 +111,12 @@
             white-space: pre-wrap;
         }
 
-        /* Image Output Styling */
         .generated-image {
             max-width: 100%;
             border-radius: 12px;
             margin-top: 10px;
         }
 
-        /* Audio Player Styling */
-        .audio-player {
-            margin-top: 10px;
-        }
-
-        audio {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        /* Input Area - ChatGPT Style */
         .input-container {
             border-top: 1px solid #4a4b53;
             background: #343541;
@@ -141,6 +127,28 @@
             max-width: 800px;
             margin: 0 auto;
             position: relative;
+        }
+
+        .quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .quick-prompt-btn {
+            background: #40414f;
+            color: #ececf1;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background 0.2s;
+        }
+
+        .quick-prompt-btn:hover {
+            background: #10a37f;
         }
 
         .input-area {
@@ -181,7 +189,6 @@
             background: #1a7f64;
         }
 
-        /* Mode-specific input hints */
         .mode-hint {
             font-size: 0.75rem;
             color: #8e8ea0;
@@ -189,7 +196,6 @@
             text-align: center;
         }
 
-        /* Loading animation */
         .loading {
             display: inline-block;
             width: 20px;
@@ -204,20 +210,35 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Select dropdown for text mode */
-        .mode-select {
+        .fallback-menu {
             background: #40414f;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-            cursor: pointer;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
         }
 
-        .mode-select option {
+        .fallback-menu h4 {
+            color: #10a37f;
+            margin-bottom: 12px;
+        }
+
+        .fallback-option {
             background: #343541;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .fallback-option:hover {
+            background: #10a37f;
+        }
+
+        .fallback-option .number {
+            color: #10a37f;
+            font-weight: bold;
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -236,184 +257,492 @@
                 <div class="message-avatar">🤖</div>
                 <div class="message-content">
                     Hello! I'm your AI Content Generator.<br><br>
-                    Select a mode from the tabs above and tell me what to create!
+                    Select a mode from the tabs above. For text, try the quick prompts or type your own topic!
                 </div>
             </div>
         </div>
     </div>
 
     <div class="input-container">
-        <div class="input-wrapper">
-            <!-- Text Mode Input Area -->
-            <div id="textInputArea">
-                <select id="contentTypeSelect" class="mode-select">
-                    <option value="blog">📝 Blog Post</option>
-                    <option value="email">✉️ Email</option>
-                    <option value="code">💻 Code</option>
-                    <option value="social">📱 Social Media Post</option>
-                </select>
-                <textarea id="textInput" class="input-area" rows="2" placeholder="Describe what you want to create..."></textarea>
-            </div>
-
-            <!-- Image Mode Input Area -->
-            <div id="imageInputArea" style="display: none;">
-                <textarea id="imageInput" class="input-area" rows="2" placeholder="Describe the image you want to generate..."></textarea>
-            </div>
-
-            <!-- Audio Mode Input Area -->
-            <div id="audioInputArea" style="display: none;">
-                <textarea id="audioInput" class="input-area" rows="2" placeholder="Enter text to convert to speech..."></textarea>
-            </div>
-
-            <button class="send-btn" onclick="sendMessage()">Send</button>
+    <div class="input-wrapper">
+        <!-- Text Mode Input Area -->
+        <div id="textInputArea">
+            <div class="quick-prompts" id="textQuickPrompts"></div>
+            <textarea id="textInput" class="input-area" rows="2" placeholder="Describe what you want to write about..."></textarea>
         </div>
-        <div class="mode-hint" id="modeHint">💡 Text Mode: Generate blog posts, emails, code, or social media content</div>
+
+        <!-- Image Mode Input Area -->
+        <div id="imageInputArea" style="display: none;">
+            <div class="quick-prompts" id="imageQuickPrompts"></div>
+            <textarea id="imageInput" class="input-area" rows="2" placeholder="Describe the image you want to generate..."></textarea>
+        </div>
+
+        <!-- Audio Mode Input Area -->
+        <div id="audioInputArea" style="display: none;">
+            <div class="quick-prompts" id="audioQuickPrompts"></div>
+            <textarea id="audioInput" class="input-area" rows="2" placeholder="Enter text to convert to speech..."></textarea>
+        </div>
+
+        <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
+    <div class="mode-hint" id="modeHint">💡 Text Mode: Click a quick prompt or type your own topic</div>
+</div>
 
     <script>
-        let currentMode = 'text';
+    let currentMode = 'text';
+    let currentFallbackAnswers = null;
 
-        function switchMode(mode) {
-            currentMode = mode;
+    // Separate chat histories for each mode
+    let chatHistories = {
+        text: [],
+        image: [],
+        audio: []
+    };
 
-            // Update tab styles
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
+    // Quick prompts for text mode
+    const textQuickPrompts = [
+        "Write a blog post about artificial intelligence and its impact on jobs",
+        "Write a blog post about learning Python as a beginner",
+        "Write a blog post about space exploration and Mars colonization",
+        "Write a blog post about climate change solutions",
+        "Write a blog post about mental health awareness"
+    ];
 
-            // Show/hide input areas
-            document.getElementById('textInputArea').style.display = mode === 'text' ? 'block' : 'none';
-            document.getElementById('imageInputArea').style.display = mode === 'image' ? 'block' : 'none';
-            document.getElementById('audioInputArea').style.display = mode === 'audio' ? 'block' : 'none';
+    // Quick prompts for image mode - descriptive and meaningful
+    const imageQuickPrompts = [
+        "A futuristic robot working alongside humans in an office, digital art",
+        "A person learning to code on a laptop with Python logo, colorful illustration",
+        "Astronaut planting a flag on Mars with Earth in the background, cinematic",
+        "Renewable energy scene with wind turbines and solar panels, vibrant colors",
+        "Peaceful scene of a person meditating in nature, calm and serene"
+    ];
 
-            // Update hint text
-            const hint = document.getElementById('modeHint');
-            if (mode === 'text') hint.innerHTML = '💡 Text Mode: Generate blog posts, emails, code, or social media content';
-            else if (mode === 'image') hint.innerHTML = '🖼️ Image Mode: Describe any image and AI will generate it';
-            else hint.innerHTML = '🎵 Audio Mode: Enter text and AI will convert it to speech';
+    // Quick prompts for audio mode - descriptive and meaningful
+    const audioQuickPrompts = [
+        "AI and the future of work: Artificial intelligence is transforming workplaces everywhere",
+        "Python programming for beginners: Learn Python the easy way with simple syntax",
+        "Space exploration and Mars: Humanity's next great adventure awaits on the red planet",
+        "Climate change solutions: Simple actions that make a big difference for our planet",
+        "Mental health awareness: Taking care of your mind is just as important as your body"
+    ];
+
+    // Pre-written answers for text fallback (when API fails)
+    const textFallbackAnswers = {
+        0: `**AI and the Future of Work**
+
+Artificial intelligence is transforming the workplace. While some jobs may be automated, AI is creating new opportunities in tech, data science, and human-AI collaboration. The key is adapting and learning new skills. Studies show that workers who embrace AI tools become more productive and valuable to employers. The future isn't about humans vs machines - it's about humans with machines.`,
+
+        1: `**Why Python is Perfect for Beginners**
+
+Python is the world's most popular programming language for beginners. Its simple, readable syntax feels like writing English. You can build a website, analyze data, or automate tasks within weeks of starting. With free resources like Codecademy and freeCodeCamp, anyone can learn Python regardless of background. The Python community is welcoming and supportive, making it the ideal first language.`,
+
+        2: `**Mars: Humanity's Next Frontier**
+
+Space exploration is entering an exciting era. NASA and SpaceX plan to send humans to Mars within the decade. The red planet offers scientists a chance to study planetary evolution and search for signs of ancient life. Colonizing Mars would ensure humanity's survival and drive technological innovation. While challenges remain - radiation, low gravity, and life support - the dream of becoming a multi-planetary species is closer than ever.`,
+
+        3: `**Climate Change Solutions That Work**
+
+Climate change is the defining challenge of our time. The good news? Solutions exist. Renewable energy like solar and wind is now cheaper than coal in most countries. Electric vehicles are becoming mainstream. Reforestation projects remove carbon from the atmosphere. Individuals can help by reducing meat consumption, using public transit, and voting for climate-conscious leaders. Every action matters.`,
+
+        4: `**Mental Health Awareness Matters**
+
+Mental health is just as important as physical health. Yet too many people suffer in silence due to stigma. Talking openly about anxiety, depression, and stress helps normalize these experiences. Simple practices like meditation, exercise, and connecting with others can dramatically improve wellbeing. If you're struggling, reach out to a friend, family member, or professional. You are not alone, and help is available.`
+    };
+
+    // Pre-generated images (stored locally)
+    const preGeneratedImages = [
+        "/static/images/image_0.jpg",
+        "/static/images/image_1.jpg",
+        "/static/images/image_2.jpg",
+        "/static/images/image_3.jpg",
+        "/static/images/image_4.jpg"
+    ];
+
+    // Pre-generated audio files (stored locally)
+    const preGeneratedAudio = [
+        "/static/audio/audio_0.mp3",
+        "/static/audio/audio_1.mp3",
+        "/static/audio/audio_2.mp3",
+        "/static/audio/audio_3.mp3",
+        "/static/audio/audio_4.mp3"
+    ];
+
+    // Store buttons for each mode
+    let textButtons = [];
+    let imageButtons = [];
+    let audioButtons = [];
+
+    function createButtonsForMode(mode) {
+    const buttons = [];
+    let prompts = [];
+
+    if (mode === 'text') {
+        prompts = textQuickPrompts;
+    } else if (mode === 'image') {
+        prompts = imageQuickPrompts;
+    } else if (mode === 'audio') {
+        prompts = audioQuickPrompts;
+    }
+
+    for (let index = 0; index < prompts.length; index++) {
+        const prompt = prompts[index];
+        const btn = document.createElement('button');
+        btn.className = 'quick-prompt-btn';
+        btn.textContent = prompt.length > 40 ? prompt.substring(0, 40) + '...' : prompt;
+        btn.title = prompt;
+
+        btn.onclick = (function(modeType, idx) {
+            return function() {
+                const fullPrompt = modeType === 'text' ? textQuickPrompts[idx] :
+                                  (modeType === 'image' ? imageQuickPrompts[idx] : audioQuickPrompts[idx]);
+
+                // Add user message
+                addMessage(fullPrompt, true);
+
+                if (modeType === 'text') {
+                    // Text mode: use pre-written answers
+                    addMessage(textFallbackAnswers[idx], false);
+                } else if (modeType === 'image') {
+                    // Image mode: use local static images
+                    addMessage('', false, true, preGeneratedImages[idx]);
+                } else if (modeType === 'audio') {
+                    // Audio mode: use local static audio files
+                    const audioUrl = preGeneratedAudio[idx];
+                    console.log("Playing audio:", audioUrl);
+                    addMessage('', false, false, null, true, audioUrl);
+                }
+            };
+        })(mode, index);
+
+        buttons.push(btn);
+    }
+
+    return buttons;
+}
+
+    function loadQuickPrompts() {
+    // Get the correct container based on current mode
+    let container = null;
+
+    if (currentMode === 'text') {
+        container = document.getElementById('textQuickPrompts');
+    } else if (currentMode === 'image') {
+        container = document.getElementById('imageQuickPrompts');
+    } else if (currentMode === 'audio') {
+        container = document.getElementById('audioQuickPrompts');
+    }
+
+    if (!container) {
+        console.error("Container not found for mode:", currentMode);
+        return;
+    }
+
+    // Clear container
+    container.innerHTML = '';
+
+    // Get prompts for current mode
+    let prompts = [];
+    if (currentMode === 'text') {
+        prompts = textQuickPrompts;
+    } else if (currentMode === 'image') {
+        prompts = imageQuickPrompts;
+    } else if (currentMode === 'audio') {
+        prompts = audioQuickPrompts;
+    }
+
+    // Create buttons
+    for (let i = 0; i < prompts.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'quick-prompt-btn';
+        btn.textContent = prompts[i].length > 40 ? prompts[i].substring(0, 40) + '...' : prompts[i];
+        btn.title = prompts[i];
+
+        btn.onclick = (function(idx, mode) {
+            return function() {
+                const fullPrompt = mode === 'text' ? textQuickPrompts[idx] :
+                                  (mode === 'image' ? imageQuickPrompts[idx] : audioQuickPrompts[idx]);
+                addMessage(fullPrompt, true);
+
+                if (mode === 'text') {
+                    addMessage(textFallbackAnswers[idx], false);
+                } else if (mode === 'image') {
+                    addMessage('', false, true, preGeneratedImages[idx]);
+                } else if (mode === 'audio') {
+                    addMessage('', false, false, null, true, preGeneratedAudio[idx]);
+                }
+            };
+        })(i, currentMode);
+
+        container.appendChild(btn);
+    }
+
+    console.log(`Loaded ${prompts.length} prompts for ${currentMode} mode`);
+}
+
+    function switchMode(mode) {
+        currentMode = mode;
+        currentFallbackAnswers = null;
+
+        // Update tab active states
+        const tabs = document.querySelectorAll('.tab');
+        for (let i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
         }
 
-        function addMessage(content, isUser, isImage = false, imageUrl = null, isAudio = false, audioUrl = null) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
-
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.textContent = isUser ? '👤' : '🤖';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-
-            if (isImage && imageUrl) {
-                contentDiv.innerHTML = `<img src="${imageUrl}" class="generated-image" alt="Generated Image">`;
-            } else if (isAudio && audioUrl) {
-                contentDiv.innerHTML = `<div class="audio-player"><audio controls src="${audioUrl}"></audio></div>`;
-            } else {
-                contentDiv.innerHTML = content.replace(/\n/g, '<br>');
-            }
-
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(contentDiv);
-            messagesDiv.appendChild(messageDiv);
-
-            // Scroll to bottom
-            const container = document.getElementById('chatContainer');
-            container.scrollTop = container.scrollHeight;
+        // Find and activate the correct tab
+        if (mode === 'text') {
+            tabs[0].classList.add('active');
+        } else if (mode === 'image') {
+            tabs[1].classList.add('active');
+        } else if (mode === 'audio') {
+            tabs[2].classList.add('active');
         }
 
-        function showTypingIndicator() {
-            const messagesDiv = document.getElementById('messages');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'message assistant';
-            typingDiv.id = 'typingIndicator';
-            typingDiv.innerHTML = `
+        // Show/hide input areas
+        document.getElementById('textInputArea').style.display = mode === 'text' ? 'block' : 'none';
+        document.getElementById('imageInputArea').style.display = mode === 'image' ? 'block' : 'none';
+        document.getElementById('audioInputArea').style.display = mode === 'audio' ? 'block' : 'none';
+
+        const hint = document.getElementById('modeHint');
+        if (mode === 'text') hint.innerHTML = '💡 Text Mode: Click a quick prompt or type your own topic';
+        else if (mode === 'image') hint.innerHTML = '🖼️ Image Mode: Click a quick prompt or describe an image';
+        else hint.innerHTML = '🎵 Audio Mode: Click a quick prompt or enter text to convert to speech';
+
+        // Reload quick prompts for the new mode
+        loadQuickPrompts();
+
+        // Load the chat history for this mode
+        loadChatHistoryForMode(mode);
+    }
+
+    function loadChatHistoryForMode(mode) {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+
+        // Add welcome message for empty history
+        if (chatHistories[mode].length === 0) {
+            let welcomeText = '';
+            if (mode === 'text') welcomeText = 'Hello! I\'m your AI Text Generator. Click a quick prompt or type your own topic!';
+            else if (mode === 'image') welcomeText = 'Hello! I\'m your AI Image Generator. Click a quick prompt or describe an image you want to create!';
+            else welcomeText = 'Hello! I\'m your AI Audio Generator. Click a quick prompt or enter text to convert to speech!';
+
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'message assistant';
+            welcomeDiv.innerHTML = `
                 <div class="message-avatar">🤖</div>
                 <div class="message-content">
-                    <div class="loading"></div> Generating...
+                    ${welcomeText}
                 </div>
             `;
-            messagesDiv.appendChild(typingDiv);
-            const container = document.getElementById('chatContainer');
-            container.scrollTop = container.scrollHeight;
-        }
+            messagesDiv.appendChild(welcomeDiv);
+        } else {
+            // Restore all messages for this mode
+            for (let i = 0; i < chatHistories[mode].length; i++) {
+                const msg = chatHistories[mode][i];
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.isUser ? 'user' : 'assistant'}`;
 
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
-        }
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = msg.isUser ? '👤' : '🤖';
 
-        async function sendMessage() {
-            let userMessage = '';
-            let contentType = 'blog';
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
 
-            if (currentMode === 'text') {
-                userMessage = document.getElementById('textInput').value.trim();
-                contentType = document.getElementById('contentTypeSelect').value;
-                document.getElementById('textInput').value = '';
-            } else if (currentMode === 'image') {
-                userMessage = document.getElementById('imageInput').value.trim();
-                document.getElementById('imageInput').value = '';
-            } else if (currentMode === 'audio') {
-                userMessage = document.getElementById('audioInput').value.trim();
-                document.getElementById('audioInput').value = '';
-            }
-
-            if (!userMessage) return;
-
-            // Add user message to chat
-            addMessage(userMessage, true);
-
-            // Show typing indicator
-            showTypingIndicator();
-
-            try {
-                if (currentMode === 'text') {
-                    const response = await fetch('/generate/text', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            prompt: userMessage,
-                            contentType: contentType
-                        })
-                    });
-                    const data = await response.json();
-                    removeTypingIndicator();
-                    addMessage(data.response, false);
-
-                } else if (currentMode === 'image') {
-                    const response = await fetch('/generate/image', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: userMessage })
-                    });
-                    const data = await response.json();
-                    removeTypingIndicator();
-                    addMessage('', false, true, data.imageUrl);
-
-                } else if (currentMode === 'audio') {
-                    // Audio endpoint - we'll add this next
-                    removeTypingIndicator();
-                    addMessage('Audio generation coming soon! 🎵', false);
+                if (msg.isImage && msg.imageUrl) {
+                    contentDiv.innerHTML = `<img src="${msg.imageUrl}" class="generated-image" alt="Generated Image">`;
+                } else if (msg.isAudio && msg.audioUrl) {
+                    contentDiv.innerHTML = `<audio controls src="${msg.audioUrl}" style="width: 100%;"></audio>`;
+                } else {
+                    contentDiv.innerHTML = msg.content.replace(/\n/g, '<br>');
                 }
 
-            } catch (error) {
-                removeTypingIndicator();
-                addMessage('Sorry, an error occurred. Please try again.', false);
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(contentDiv);
+                messagesDiv.appendChild(messageDiv);
             }
         }
 
-        // Allow Enter to send
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                const activeElement = document.activeElement;
-                if (activeElement && activeElement.classList && activeElement.classList.contains('input-area')) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            }
+        const container = document.getElementById('chatContainer');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addMessage(content, isUser, isImage = false, imageUrl = null, isAudio = false, audioUrl = null) {
+    // Store message in current mode's history
+    chatHistories[currentMode].push({
+        content: content,
+        isUser: isUser,
+        isImage: isImage,
+        imageUrl: imageUrl,
+        isAudio: isAudio,
+        audioUrl: audioUrl
+    });
+
+    // Display message
+    const messagesDiv = document.getElementById('messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = isUser ? '👤' : '🤖';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    if (isImage && imageUrl) {
+        // Make sure the image URL is absolute or properly formatted
+        let imgSrc = imageUrl;
+        if (!imgSrc.startsWith('http') && !imgSrc.startsWith('/')) {
+            imgSrc = '/' + imgSrc;
+        }
+        contentDiv.innerHTML = `<img src="${imgSrc}" class="generated-image" alt="Generated Image" style="max-width: 100%; border-radius: 12px; margin-top: 10px;" onerror="this.onerror=null; this.src='https://placehold.co/512x512?text=Image+Not+Found';">`;
+        } else if (isAudio && audioUrl) {
+        let audioSrc = audioUrl;
+        if (!audioSrc.startsWith('http') && !audioSrc.startsWith('/')) {
+            audioSrc = '/' + audioSrc;
+        }
+        contentDiv.innerHTML = `<audio controls src="${audioSrc}" style="width: 100%; margin-top: 10px;"></audio>`;
+    } else {
+        contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+    }
+
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+    messagesDiv.appendChild(messageDiv);
+
+    const container = document.getElementById('chatContainer');
+    container.scrollTop = container.scrollHeight;
+}
+
+    function showTypingIndicator() {
+        const messagesDiv = document.getElementById('messages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message assistant';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+                <div class="loading"></div> Generating...
+            </div>
+        `;
+        messagesDiv.appendChild(typingDiv);
+        const container = document.getElementById('chatContainer');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+
+    function showFallbackMenu(fallbackData) {
+        // Store fallback menu in history as a special message
+        const menuHtml = '<div class="fallback-menu"><h4>⚠️ API is currently unavailable. Please choose from our library:</h4>' +
+            fallbackData.quickPrompts.map((prompt, i) => `
+                <div class="fallback-option" onclick="selectFallback(${i})">
+                    <span class="number">${i + 1}.</span>
+                    <span>${prompt}</span>
+                </div>
+            `).join('') + '</div>';
+
+        // Store in history
+        chatHistories[currentMode].push({
+            content: menuHtml,
+            isUser: false,
+            isImage: false,
+            isFallbackMenu: true
         });
-    </script>
+
+        // Update display
+        const contentDiv = document.querySelector('#messages .message:last-child .message-content');
+        if (contentDiv) {
+            contentDiv.innerHTML = menuHtml;
+        }
+        currentFallbackAnswers = fallbackData.fallbackAnswers;
+    }
+
+    async function selectFallback(index) {
+        if (currentFallbackAnswers && currentFallbackAnswers[index]) {
+            removeTypingIndicator();
+            addMessage(currentFallbackAnswers[index], false);
+        }
+    }
+
+    async function sendMessage() {
+        let userMessage = '';
+
+        if (currentMode === 'text') {
+            userMessage = document.getElementById('textInput').value.trim();
+            document.getElementById('textInput').value = '';
+        } else if (currentMode === 'image') {
+            userMessage = document.getElementById('imageInput').value.trim();
+            document.getElementById('imageInput').value = '';
+        } else if (currentMode === 'audio') {
+            userMessage = document.getElementById('audioInput').value.trim();
+            document.getElementById('audioInput').value = '';
+        }
+
+        if (!userMessage) return;
+
+        addMessage(userMessage, true);
+        showTypingIndicator();
+
+        try {
+            if (currentMode === 'text') {
+                const response = await fetch('/generate/text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: userMessage })
+                });
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (data.fallback) {
+                    showFallbackMenu(data);
+                } else {
+                    addMessage(data.response, false);
+                }
+
+            } else if (currentMode === 'image') {
+                const response = await fetch('/generate/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: userMessage })
+                });
+                const data = await response.json();
+                removeTypingIndicator();
+                addMessage('', false, true, data.imageUrl);
+
+            } else if (currentMode === 'audio') {
+                removeTypingIndicator();
+                addMessage('🎵 Custom audio generation coming soon! For now, please use the quick prompts.', false);
+            }
+
+        } catch (error) {
+            removeTypingIndicator();
+            addMessage('Sorry, an error occurred. Please try again.', false);
+        }
+    }
+
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.classList && activeElement.classList.contains('input-area')) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+    });
+
+    // Initialize when page loads - create all buttons once
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded, creating all button sets...");
+        textButtons = createButtonsForMode('text');
+        imageButtons = createButtonsForMode('image');
+        audioButtons = createButtonsForMode('audio');
+        loadQuickPrompts();
+    });
+</script>
 </body>
 </html>

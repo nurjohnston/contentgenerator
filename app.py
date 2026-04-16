@@ -4,6 +4,8 @@ import json
 import os
 import time
 import urllib.parse
+from gtts import gTTS
+import uuid
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -23,6 +25,22 @@ if not API_KEY:
     API_KEY = input("Paste your Gemini API key: ")
 
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={API_KEY}"
+
+# Load Pollinations API key
+POLLINATIONS_API_KEY = None
+try:
+    with open('.env', 'r') as f:
+        for line in f:
+            if line.startswith('POLLINATIONS_API_KEY='):
+                POLLINATIONS_API_KEY = line.strip().split('=')[1]
+                print("✓ Loaded Pollinations API key")
+                break
+except FileNotFoundError:
+    pass
+
+if not POLLINATIONS_API_KEY:
+    print("⚠️ No Pollinations API key found. Image generation will not work.")
+    print("Get your free key from: https://pollinations.ai")
 
 # Pre-computed prompts for quick buttons
 QUICK_PROMPTS = [
@@ -83,10 +101,26 @@ def generate_text(prompt):
 
 
 def generate_image(prompt):
-    """Generate image using Pollinations"""
+    """Generate image using Pollinations API with key from .env"""
 
+    if not POLLINATIONS_API_KEY:
+        # Fallback to static images if no API key
+        import random
+        static_images = [
+            "/static/images/image_0.jpg",
+            "/static/images/image_1.jpg",
+            "/static/images/image_2.jpg",
+            "/static/images/image_3.jpg",
+            "/static/images/image_4.jpg"
+        ]
+        return random.choice(static_images)
+
+    # Encode the prompt for URL (spaces become %20, etc.)
     encoded_prompt = urllib.parse.quote(prompt)
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?nologo=true&width=512&height=512"
+
+    # Build the URL with the API key from .env file
+    # Format: https://gen.pollinations.ai/image/{PROMPT}?key=YOUR_KEY&model=flux
+    image_url = f"https://gen.pollinations.ai/image/{encoded_prompt}?key={POLLINATIONS_API_KEY}&model=flux&width=512&height=512"
 
     return image_url
 
@@ -109,10 +143,8 @@ def generate_text_endpoint():
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
 
-    # Try API first
     response = generate_text(prompt)
 
-    # If API fails, return fallback data
     if response is None:
         return jsonify({
             'fallback': True,
@@ -131,8 +163,38 @@ def generate_image_endpoint():
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
 
+    # Generate the image URL using the key from .env
     image_url = generate_image(prompt)
+
+    # Return the URL - the browser will fetch the image directly
     return jsonify({'imageUrl': image_url})
+
+
+@app.route('/generate/audio', methods=['POST'])
+def generate_audio_endpoint():
+    data = request.get_json()
+    prompt = data.get('prompt', '')
+
+    if not prompt:
+        return jsonify({'error': 'No prompt provided'}), 400
+
+    try:
+        os.makedirs('static/audio', exist_ok=True)
+        filename = f"audio_{uuid.uuid4().hex[:8]}.mp3"
+        filepath = os.path.join('static', 'audio', filename)
+
+        tts = gTTS(prompt, lang='en')
+        tts.save(filepath)
+
+        audio_url = f"/static/audio/{filename}"
+        return jsonify({'audioUrl': audio_url})
+
+    except Exception as e:
+        print(f"Audio generation error: {e}")
+        return jsonify({
+            'fallback': True,
+            'message': 'Audio generation failed. Please use the pre-generated prompts above.'
+        })
 
 
 if __name__ == '__main__':
@@ -141,7 +203,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print("\n📍 http://127.0.0.1:5000")
     print("📍 Text Generation: Gemini API (with fallback)")
-    print("📍 Image Generation: Pollinations (or local static files)")
-    print("📍 Static files served from: /static/")
+    print("📍 Image Generation: Pollinations (with API key from .env)")
+    print("📍 Audio Generation: gTTS (Text-to-Speech)")
     print("\nPress Ctrl+C to stop\n")
     app.run(debug=True, port=5000)

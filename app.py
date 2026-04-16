@@ -44,34 +44,34 @@ if not POLLINATIONS_API_KEY:
 
 # Pre-computed prompts for quick buttons
 QUICK_PROMPTS = [
-    "Write a blog post about artificial intelligence and its impact on jobs",
-    "Write a blog post about learning Python as a beginner",
-    "Write a blog post about space exploration and Mars colonization",
-    "Write a blog post about climate change solutions",
-    "Write a blog post about mental health awareness"
+    "Write a blog post about the legendary VW 1.9 TDI engine reliability",
+    "Write a blog post comparing VW 1.9 TDI vs 2.0 TDI engines",
+    "Write a blog post about common problems and fixes for the VW 2.0 TDI",
+    "Write a blog post about tuning and performance upgrades for TDI engines",
+    "Write a blog post about the history of VW TDI diesel engines"
 ]
 
 # Pre-written answers for fallback (when API fails)
 FALLBACK_ANSWERS = {
-    0: """**AI and the Future of Work**
+    0: """**The Legendary VW 1.9 TDI - Why It's Unkillable**
 
-Artificial intelligence is transforming the workplace. While some jobs may be automated, AI is creating new opportunities in tech, data science, and human-AI collaboration. The key is adapting and learning new skills. Studies show that workers who embrace AI tools become more productive and valuable to employers. The future isn't about humans vs machines - it's about humans with machines.""",
+The VW 1.9 TDI engine, particularly the ALH and PD versions, is legendary for its reliability. Many owners report exceeding 300,000 miles with basic maintenance. The mechanical injection pump on earlier models is simple and robust. The ALH engine (1998-2003) is considered the most reliable, while the PD (2004-2006) offers more power but with camshaft wear concerns. These engines routinely outlast the cars they're in and have a cult following worldwide.""",
 
-    1: """**Why Python is Perfect for Beginners**
+    1: """**1.9 TDI vs 2.0 TDI - Which One is Better?**
 
-Python is the world's most popular programming language for beginners. Its simple, readable syntax feels like writing English. You can build a website, analyze data, or automate tasks within weeks of starting. With free resources like Codecademy and freeCodeCamp, anyone can learn Python regardless of background. The Python community is welcoming and supportive, making it the ideal first language.""",
+The 1.9 TDI is simpler, more reliable, and easier to work on. It lacks a DPF and has fewer emissions components that fail. The 2.0 TDI (common rail, 2008+) offers more power, smoother operation, and better fuel economy. However, the 2.0 TDI has known issues: failed DPF, clogged intake manifolds, failed EGR coolers, and dual-mass flywheel failures. For a daily driver, the 2.0 TDI is fine. For longevity and DIY maintenance, the 1.9 TDI wins.""",
 
-    2: """**Mars: Humanity's Next Frontier**
+    2: """**Common 2.0 TDI Problems and Fixes**
 
-Space exploration is entering an exciting era. NASA and SpaceX plan to send humans to Mars within the decade. The red planet offers scientists a chance to study planetary evolution and search for signs of ancient life. Colonizing Mars would ensure humanity's survival and drive technological innovation. While challenges remain - radiation, low gravity, and life support - the dream of becoming a multi-planetary species is closer than ever.""",
+The 2.0 TDI has several common issues: DPF clogging (solution: regular highway driving or delete), failed EGR valve (solution: clean or delete), failed dual-mass flywheel (solution: replace with solid flywheel), camshaft wear (use correct oil), and failed heater core (flush system). The good news is most problems have known fixes. The CP4 fuel pump is also a weak point - consider upgrading to a CP3 pump for reliability.""",
 
-    3: """**Climate Change Solutions That Work**
+    3: """**Tuning Your TDI - Power Upgrades That Work**
 
-Climate change is the defining challenge of our time. The good news? Solutions exist. Renewable energy like solar and wind is now cheaper than coal in most countries. Electric vehicles are becoming mainstream. Reforestation projects remove carbon from the atmosphere. Individuals can help by reducing meat consumption, using public transit, and voting for climate-conscious leaders. Every action matters.""",
+A simple tune (remap) on a 1.9 TDI ALH can take it from 90hp to 130hp with no hardware changes. Add bigger nozzles for 150hp. A VNT17 turbo plus tune can reach 170-180hp. For the 2.0 TDI, a stage 1 tune adds 30-40hp. Stage 2 with downpipe adds another 20hp. Keep EGTs in check and always monitor boost. A clutch upgrade is recommended above 300lb-ft torque. These engines respond incredibly well to tuning.""",
 
-    4: """**Mental Health Awareness Matters**
+    4: """**The History of VW TDI Engines**
 
-Mental health is just as important as physical health. Yet too many people suffer in silence due to stigma. Talking openly about anxiety, depression, and stress helps normalize these experiences. Simple practices like meditation, exercise, and connecting with others can dramatically improve wellbeing. If you're struggling, reach out to a friend, family member, or professional. You are not alone, and help is available."""
+VW introduced TDI (Turbo Direct Injection) in 1989. The 1.9 TDI came in several versions: VE (1996-2003) with mechanical injection pump, PD (2004-2006) with unit injectors, and then the 2.0 TDI common rail (2008+). The 1.9 ALH is the most beloved. Dieselgate (2015) hurt VW's diesel reputation, but the TDI community remains strong. These engines are known for torque, fuel efficiency (40-50mpg), and longevity when properly maintained."""
 }
 
 

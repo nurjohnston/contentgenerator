@@ -40,8 +40,10 @@ except FileNotFoundError:
     pass
 
 if not POLLINATIONS_API_KEY:
-    print("⚠️ No Pollinations API key found. Image generation will not work.")
-    print("Get your free key from: https://pollinations.ai")
+    POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
+    if not POLLINATIONS_API_KEY:
+        print("⚠️ No Pollinations API key found. Image generation will not work.")
+        print("Get your free key from: https://pollinations.ai")
 
 # Pre-computed prompts for quick buttons
 QUICK_PROMPTS = [
